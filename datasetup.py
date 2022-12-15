@@ -37,7 +37,7 @@ def create_dataloader_split(dataset, train_percent=0.8, batch_size=32):
     validation, test = random_split(dataset=evaluation, lengths=[validation_size, test_size])
     train_loader = DataLoader(dataset=train, batch_size=batch_size, shuffle=True)
     validation_loader = DataLoader(dataset=validation, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=test, batch_size=batch_size)
+    test_loader = DataLoader(dataset=test, batch_size=1000)
 
     return train_loader, validation_loader, test_loader
     
