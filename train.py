@@ -24,10 +24,10 @@ def train(net, train_loader, val_loader, opt, criterion, epochs, minerror, model
         train_loss = engine.train_step(model=net, data=train_loader, criterion=criterion, optimizer=opt)
         val_loss = engine.val_step(model=net, data=val_loader, criterion=criterion)
         if val_loss < minerror:
-            val_loss = minerror
+            minerror = val_loss
             kt.save_ckp(model=net, opt=opt, epoch=epoch, minerror=val_loss, fname=modelname)
             
-        print(f"train_loss={train_loss} val_loss={val_loss}")
+        print(f"train_loss={train_loss} val_loss={minerror}")
     
 
 
@@ -46,8 +46,8 @@ def main():
         state = keeptrack.load_ckp(fname=model_name)
         Net.load_state_dict(state['model'])
         print(f"min error is {state['minerror']} which happen at epoch {state['epoch']}")
-        engine.test_step(model=Net)
-        
+        engine.test_step(model=Net, data=test_data, criterion=criteria)
+
 
 
 if __name__ == '__main__':

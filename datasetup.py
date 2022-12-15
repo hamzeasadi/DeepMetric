@@ -27,7 +27,7 @@ train_transform = transforms.Compose([
 
 dataset = ImageFolder(root=cfg.paths['libbherr'], transform=auto_transform)
 
-def create_dataloader_split(dataset, train_percent=0.8, batch_size=16):
+def create_dataloader_split(dataset, train_percent=0.8, batch_size=32):
     data_size = len(dataset)
     train_size = int(train_percent*data_size)
     evaluation_size = data_size - train_size
