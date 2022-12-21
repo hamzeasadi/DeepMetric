@@ -6,13 +6,16 @@ from sklearn.manifold import TSNE
 import numpy as np
 from matplotlib import pyplot as plt
 
+
+dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def train_step(model: nn.Module, data: DataLoader, criterion: nn.Module, optimizer: optim):
     epoch_error = 0
     l = len(data)
     model.train()
     for i, (X, Y) in enumerate(data):
-        out = model(X)
-        loss = criterion(out, Y)
+        out = model(X.to(dev))
+        loss = criterion(out, Y.to(dev))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -27,8 +30,8 @@ def val_step(model: nn.Module, data: DataLoader, criterion: nn.Module):
     model.eval()
     with torch.no_grad():
         for i, (X, Y) in enumerate(data):
-            out = model(X)
-            loss = criterion(out, Y)
+            out = model(X.to(dev))
+            loss = criterion(out, Y.to(dev))
             epoch_error += loss.item()
 
     return epoch_error/l

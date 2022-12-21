@@ -32,7 +32,7 @@ def train(net, train_loader, val_loader, opt, criterion, epochs, minerror, model
 
 
 def main():
-    model_name = f"orthosource.pt"
+    model_name = f"orthosource_0.pt"
     keeptrack = KeepTrack(path=cfg.paths['model'])
     Net = OrthoSource()
     opt = optim.Adam(params=Net.parameters(), lr=3e-4)

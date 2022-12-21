@@ -283,7 +283,7 @@ def main():
 
     src_path = os.path.join(os.getcwd(), 'data', 'iframes')
     trg_path = os.path.join(os.getcwd(), 'data', 'residuals')
-    save_residual(srcpath=src_path, trgpath=trg_path)
+    # save_residual(srcpath=src_path, trgpath=trg_path)
     # img = cv2.imread(os.path.join(src_path, 'Spreader', '2022-09-07_090540_Spreader_b188206_1_0.jpeg'))
     # imagepatchingsprd(img)
 
@@ -291,7 +291,8 @@ def main():
     for i in range(3):
         imgpath = os.path.join(trg_path, 'Truck TTR', f'crop_{i}.png')
         img = cv2.imread(imgpath)
-        for j in range(3):
+        for j in range(1):
+            denoise_wavelet(image=crop1, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
             axs[i, j].imshow(img[:, :, j], cmap='gray')
             axs[i, j].set_axis_off()
 
