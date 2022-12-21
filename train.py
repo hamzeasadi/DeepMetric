@@ -34,7 +34,7 @@ def train(net, train_loader, val_loader, opt, criterion, epochs, minerror, model
 
 
 def main():
-    model_name = f"orthosource_0.pt"
+    model_name = f"orthosource_1.pt"
     keeptrack = KeepTrack(path=cfg.paths['model'])
     Net = OrthoSource()
     Net.to(dev)
