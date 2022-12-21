@@ -5,8 +5,9 @@ from skimage.restoration import estimate_sigma, denoise_wavelet
 import conf as cfg
 import os
 import time
-import skimage.io
+from skimage import io
 import pywt
+import skimage
 
 
 def video_frame_extract(video_path: str, target_path: str, num_frame: int):
@@ -88,51 +89,178 @@ def wavelet_denoise_wtsmooth(img_path):
     
     # coif5
     # VisuShrink, BayesShrink
-    denoise_img = denoise_wavelet(image=original_img, wavelet='coif5', mode='soft', wavelet_levels=3, 
+    denoise_img = denoise_wavelet(image=original_img, wavelet='haar', mode='soft', wavelet_levels=3, 
                                     convert2ycbcr=True, method='BayesShrink', rescale_sigma=True, multichannel=True)
     
     residual_img = original_img - denoise_img
   
-    residual_img = residual_img/np.max(residual_img)
+    # residual_img = residual_img/np.max(residual_img)
     # for i in range(3):
     #     residual_img[:, :, i] = residual_img[:, :, i]/np.max(residual_img[:, :, i])
 
-    residual_img = (residual_img * 255).astype(np.uint8)
+    # residual_img = (residual_img * 255).astype(np.uint8)
     # # plt.imshow(residual_img, cmap='gray')
 
-    # fig, axs = plt.subplots(3, 1, figsize=(12, 8))
-    # axs[0].imshow(original_img, cmap='gray')
-    # axs[1].imshow(denoise_img, cmap='gray')
-    # axs[2].imshow(residual_img, cmap='gray')
-    # plt.tight_layout()
-    # # plt.subplots_adjust(wspace=0, hspace=0)
-    # plt.show()
+    fig, axs = plt.subplots(3, 1, figsize=(12, 8))
+    axs[0].imshow(original_img, cmap='gray')
+    axs[1].imshow(denoise_img, cmap='gray')
+    axs[2].imshow(residual_img, cmap='gray')
+    plt.tight_layout()
+    # plt.subplots_adjust(wspace=0, hspace=0)
+    plt.show()
 
     return residual_img
 
 
+def convertoGray(srcpath):
+    imgfolders = os.listdir(srcpath)
+    try:
+        imgfolders.remove('.DS_Store')
+    except Exception as e:
+        print(f"there is no .DS_Store folder")
 
-
-def residual_img(images_path: str, target_path: str):
-    listdirs = os.listdir(images_path)
-    if listdirs[0] == '.DS_Store':
-        listdirs.remove('.DS_Store')
-
-    for dirname in listdirs:
+    for folder in imgfolders:
+        trgpath = os.path.join(srcpath, folder)
+        imglist = os.listdir(trgpath)
 
         try:
-            os.makedirs(os.path.join(target_path, dirname))
+            imglist.remove('.DS_Store')
         except Exception as e:
-            print(e)
+            print(f"there is no .DS_Store folder")
 
-        dirpath = os.path.join(images_path, dirname)
-        list_images = os.listdir(dirpath)
-        for imgname in list_images:
-            imgpath = os.path.join(dirpath, imgname)
-            residual = wavelet_denoise_wtsmooth(imgpath)
-            residual_path = os.path.join(target_path, dirname, imgname)
-            cv2.imwrite(residual_path, residual)
+        for imgname in imglist:
+            imgpath = os.path.join(trgpath, imgname)
+            img = cv2.imread(imgpath)
+            grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            cv2.imwrite(imgpath, grayimg, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
+
+waveletalg = ['haar', 'db2', 'db1', 'sym9', 'coif5']
+def imagepatching(imggray):
+    H, W = 224, 224
+    h, w, c = imggray.shape
+    # img = imggray[85:h-80, :, 0]
+    img = imggray[:, :, 0]
+    h, w = img.shape
+    threehpatchsize = int(h/3)
+    dh = int((threehpatchsize - H)/2)
+    resw = w%W
+    numw = int(w/W)
+    dw = int(resw/(numw+1))
+    
+    crops = []
+    
+    for i in range(numw-2):
+        hi1, hi2, hi3 = dh, dh + H, dh + 2*H
+        wi1 = i*W + (i+1)*dw
+        wi2 = (i+1)*W + (i+2)*dw
+        wi3 = (i+2)*W + (i+3)*dw
+        crop1 = img[hi1:hi1+H, wi1:wi1+W]
+        crop2 = img[hi2:hi2+H, wi2:wi2+W]
+        crop3 = img[hi3:hi3+H, wi3:wi3+W]
+        # print(img.shape)
+        # print(crop1.shape, crop2.shape, crop3.shape)
+        crop1float = skimage.img_as_float(crop1)
+        crop2float = skimage.img_as_float(crop2)
+        crop3float = skimage.img_as_float(crop3)
+        wavename = waveletalg[4]
+        denoise_crop1 = denoise_wavelet(image=crop1, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        denoise_crop2 = denoise_wavelet(image=crop2, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        denoise_crop3 = denoise_wavelet(image=crop3, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        res1float = crop1float - denoise_crop1
+        res2float = crop2float - denoise_crop2
+        res3float = crop3float - denoise_crop3
+        res1 = ( (res1float - np.min(res1float))/(np.max(res1float) - np.min(res1float)) ) * 256
+        res2 = ( (res2float - np.min(res2float))/(np.max(res2float) - np.min(res2float)) ) * 256
+        res3 = ( (res3float - np.min(res3float))/(np.max(res3float) - np.min(res3float)) ) * 256
+        res = np.stack(arrays=(res1, res2, res3), axis=2)
+
+        crops.append(res)
+
+    return crops
+    
+
+def imagepatchingsprd(imggray):
+    H, W = 224, 224
+    h, w, c = imggray.shape
+    img = imggray[:, :, 0]
+    h, w = img.shape
+    threewpatchsize = int(w/3)
+    dw = int((threewpatchsize - W)/2)
+    resh = h%H
+    numh = int(h/H)
+    dh = int(resh/(numh+1))
+    # print(h, w)
+    crops = []
+    
+    for i in range(numh):
+        wi1, wi2, wi3 = dw, dw + W, dw + 2*W
+        hi = i*H + (i+1)*dh
+        
+        crop1 = img[hi:hi+H, wi1:wi1+W]
+        crop2 = img[hi:hi+H, wi2:wi2+W]
+        crop3 = img[hi:hi+H, wi3:wi3+W]
+        # print(crop1.shape)
+        crop1float = skimage.img_as_float(crop1)
+        crop2float = skimage.img_as_float(crop2)
+        crop3float = skimage.img_as_float(crop3)
+        wavename = waveletalg[4]
+        denoise_crop1 = denoise_wavelet(image=crop1, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        denoise_crop2 = denoise_wavelet(image=crop2, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        denoise_crop3 = denoise_wavelet(image=crop3, wavelet=wavename, mode='soft', wavelet_levels=2, method='BayesShrink', rescale_sigma=True)
+        res1float = crop1float - denoise_crop1
+        res2float = crop2float - denoise_crop2
+        res3float = crop3float - denoise_crop3
+        res1 = ( (res1float - np.min(res1float))/(np.max(res1float) - np.min(res1float)) ) * 256
+        res2 = ( (res2float - np.min(res2float))/(np.max(res2float) - np.min(res2float)) ) * 256
+        res3 = ( (res3float - np.min(res3float))/(np.max(res3float) - np.min(res3float)) ) * 256
+        res = np.stack(arrays=(res1, res2, res3), axis=2)
+
+        crops.append(res)
+
+    return crops
+
+
+def createdir(path):
+    try:
+        os.makedirs(path)
+    except Exception as e:
+        print("it already exist")
+
+
+def save_residual(srcpath, trgpath):
+    imgfolders = os.listdir(srcpath)
+    try:
+        imgfolders.remove('.DS_Store')
+    except Exception as e:
+        print(f"there is no .DS_Store folder")
+
+    for folder in imgfolders:
+        i=0
+        srcimgfolder = os.path.join(srcpath, folder)
+        trgimgfolder = os.path.join(trgpath, folder)
+        imglist = os.listdir(srcimgfolder)
+
+        createdir(trgimgfolder)
+
+        try:
+            imglist.remove('.DS_Store')
+        except Exception as e:
+            print(f"there is no .DS_Store folder")
+
+        for imgname in imglist:
+            imgpath = os.path.join(srcimgfolder, imgname)
+            img = cv2.imread(imgpath)
+            if folder == 'Spreader':
+                crops = imagepatchingsprd(img)
+            else:
+                crops = imagepatching(img)
+            for crop in crops:
+                trgimgpath = os.path.join(trgimgfolder, f'crop_{i}.png')
+                # cv2.imwrite(trgimgpath, crop)
+                io.imsave(trgimgpath, crop)
+                i+=1
+    
 
 def image_remove_text(img_path: str):
     
@@ -147,24 +275,30 @@ def image_remove_text(img_path: str):
 
 def main():
     # video_frame_extract(video_path=cfg.paths['videos'], target_path=cfg.paths['rawimage'], num_frame=20)
-    residual_img(images_path=cfg.paths['rawimage'], target_path=cfg.paths['libbherr'])
+    # residual_img(images_path=cfg.paths['rawimage'], target_path=cfg.paths['libbherr'])
+    # srcvideo = os.path.join(os.getcwd(), 'data', 'iframes')
+    # imgpath = os.path.join(srcvideo, 'Gantry Travel 1', '2022-09-07_090455_Gantry Travel 1_b189154_1_0.jpeg')
+    # img = cv2.imread(imgpath)
+    # imagepatching(img)
 
-    # imgs = np.random.randint(0, 190, 3)
-    # for i in imgs:
-    #     fname = f'frame_{i}.png'
-    #     imgpath = os.path.join(cfg.paths['rawimage'], 'Truck TTR', fname)
-        # img = cv2.imread(imgpath)
-        # cv2.imshow('frame', img)
-        # cv2.waitKey(0)
-        # wavelet_denoise_wtsmooth(img_path=imgpath)
-        # w2d(imgpath,'db1',10)
+    src_path = os.path.join(os.getcwd(), 'data', 'iframes')
+    trg_path = os.path.join(os.getcwd(), 'data', 'residuals')
+    save_residual(srcpath=src_path, trgpath=trg_path)
+    # img = cv2.imread(os.path.join(src_path, 'Spreader', '2022-09-07_090540_Spreader_b188206_1_0.jpeg'))
+    # imagepatchingsprd(img)
 
+    fig, axs = plt.subplots(3, 3)
+    for i in range(3):
+        imgpath = os.path.join(trg_path, 'Truck TTR', f'crop_{i}.png')
+        img = cv2.imread(imgpath)
+        for j in range(3):
+            axs[i, j].imshow(img[:, :, j], cmap='gray')
+            axs[i, j].set_axis_off()
 
-    # fname = f'frame_{10}.png'
-    # imgpath = os.path.join(cfg.paths['rawimage'], 'Truck TTR', fname)
-    # wavelet_denoise_wtsmooth(img_path=imgpath)
-    # x = np.random.randint(100)
-    # print(x)
+    plt.subplots_adjust(wspace=0, hspace=0)
+    plt.show()
+
+    
 
 
 

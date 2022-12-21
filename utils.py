@@ -6,7 +6,9 @@ import torch.nn.functional as F
 import time
 from torch import nn as nn
 from torch import optim
-
+from pytorch_metric_learning import losses
+from pytorch_metric_learning import miners
+from pytorch_metric_learning import reducers
 
 
 def euclidean_distance_matrix(x):
@@ -105,6 +107,9 @@ class OrthoLoss(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.l2 = nn.MSELoss()
+        self.loss_func = losses.AngularLoss(alpha=40)
+        self.miner_func = miners.AngularMiner(angle=20)
+        # self.reducer = reducers.SomeReducer()
 
     def triplet_loss(self, a, p, n):
         ap = torch.norm(a-p)
@@ -116,18 +121,23 @@ class OrthoLoss(nn.Module):
         return l21
 
     def forward(self, embbedings, y):
-        valid_triplet = get_triplet_mask(y)
-        if valid_triplet[0].nelement() == 0:
-            return torch.tensor([0.0], requires_grad=True)
-        else:
-            loss = self.triplet_loss(a=embbedings[valid_triplet[0][0]], p=embbedings[valid_triplet[1][0]], n=embbedings[valid_triplet[2][0]])
-            for i in range(valid_triplet[0].size()[0]):
-                anchor_idx = valid_triplet[0][i]
-                positive_idx = valid_triplet[1][i]
-                negative_idx = valid_triplet[2][i]
-                loss += self.triplet_loss(a=embbedings[anchor_idx], p=embbedings[positive_idx], n=embbedings[negative_idx])
-                # print(loss)
-            return loss
+        # valid_triplet = get_triplet_mask(y)
+        # if valid_triplet[0].nelement() == 0:
+        #     return torch.tensor([0.0], requires_grad=True)
+        # else:
+        #     loss = self.triplet_loss(a=embbedings[valid_triplet[0][0]], p=embbedings[valid_triplet[1][0]], n=embbedings[valid_triplet[2][0]])
+        #     for i in range(valid_triplet[0].size()[0]):
+        #         anchor_idx = valid_triplet[0][i]
+        #         positive_idx = valid_triplet[1][i]
+        #         negative_idx = valid_triplet[2][i]
+        #         loss += self.triplet_loss(a=embbedings[anchor_idx], p=embbedings[positive_idx], n=embbedings[negative_idx])
+        #         # print(loss)
+        #     return loss
+        miner_out = self.miner_func(embbedings, y)
+        #  = loss_func(x, labels, miner_out)
+        loss = self.loss_func(embbedings, y, miner_out)
+        return loss
+
 
 
 class KeepTrack():
@@ -151,20 +161,29 @@ class KeepTrack():
 
 def main():
     batch_size = 5
-    x = torch.randn(size=(batch_size, 5))
-    labels = torch.randint(low=0, high=1, size=(batch_size, ))
-    print(labels)
+    # x = torch.randn(size=(batch_size, 5))
+    # labels = torch.randint(low=0, high=1, size=(batch_size, ))
+    # print(labels)
 
-    valid_trip = get_triplet_mask(labels)
-    if valid_trip[0].nelement() == 0:
-        # print(len(valid_trip))
-        print("empty")
-        print(valid_trip)
-    else:
-        print("not empty")
-        print(valid_trip)
-    # dismtx = euclidean_distance_matrix(x)
-    # print(dismtx)
+    # valid_trip = get_triplet_mask(labels)
+    # if valid_trip[0].nelement() == 0:
+    #     # print(len(valid_trip))
+    #     print("empty")
+    #     print(valid_trip)
+    # else:
+    #     print("not empty")
+    #     print(valid_trip)
+    # # dismtx = euclidean_distance_matrix(x)
+    # # print(dismtx)
+
+    x = torch.randn(batch_size, 10)
+    labels = torch.randint(low=0, high=3, size=(batch_size, ))
+    loss_func = losses.AngularLoss(alpha=40)
+    miner_func = miners.AngularMiner(angle=20)
+    miner_out = miner_func(x, labels)
+    loss = loss_func(x, labels, miner_out)
+    print(miner_out)
+    print(loss)
 
     
 
