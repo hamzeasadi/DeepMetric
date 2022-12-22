@@ -34,7 +34,7 @@ def train(net, train_loader, val_loader, opt, criterion, epochs, minerror, model
 
 
 def main():
-    model_name = f"orthosource_1_cls.pt"
+    model_name = f"orthosource_2_cls.pt"
     keeptrack = KeepTrack(path=cfg.paths['model'])
     Net = OrthoSource()
     Net.to(dev)
@@ -47,9 +47,9 @@ def main():
         train(net=Net, train_loader=train_data, val_loader=val_data, opt=opt, criterion=criteria, epochs=args.epoch, minerror=minerror, modelname=model_name)
 
     if args.test:
-        model_name = f"orthosource_0.pt"
+        # model_name = f"orthosource_0.pt"
         state = keeptrack.load_ckp(fname=model_name)
-        # Net.load_state_dict(state['model'])
+        Net.load_state_dict(state['model'], strict=False)
         print(f"min error is {state['minerror']} which happen at epoch {state['epoch']}")
         engine.test_step(model=Net, data=test_data, criterion=criteria)
 

@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from sklearn.manifold import TSNE
 import numpy as np
 from matplotlib import pyplot as plt
+from torchmetrics import Accuracy, ConfusionMatrix
 
 
 dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -50,10 +51,15 @@ def test_step(model: nn.Module, data: DataLoader, criterion: nn.Module):
             # epoch_error += loss.item()
   
 
-    # print(f"test-loss={epoch_error}")
-    print(l)
-    y = Y.numpy()
-    print(y.shape)
+    # y = Y.numpy()
+    print(out.shape, Y.shape)
+    
+    yhat = torch.argmax(out, dim=1)
+    acc = Accuracy(task='multiclass', num_classes=7)
+    print(Y)
+    print(yhat)
+    accuracy = acc(yhat, Y)
+    print(accuracy)
     # colors = ['green', 'blue', 'red', 'yellow', 'cyan', 'orange', 'black', 'magenta']
     # color_code = []
     # for i in range(len(y)):
