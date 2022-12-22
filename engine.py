@@ -46,26 +46,28 @@ def test_step(model: nn.Module, data: DataLoader, criterion: nn.Module):
     with torch.no_grad():
         for i, (X, Y) in enumerate(data):
             out = model(X)
-            loss = criterion(out, Y)
-            epoch_error += loss.item()
+            # loss = criterion(out, Y)
+            # epoch_error += loss.item()
   
 
-    print(f"test-loss={epoch_error}")
+    # print(f"test-loss={epoch_error}")
+    print(l)
     y = Y.numpy()
-    colors = ['green', 'blue', 'red', 'yellow', 'cyan', 'orange', 'black', 'magenta']
-    color_code = []
-    for i in range(len(y)):
-        color_code.append(colors[y[i]])
-    # print(color_code)
-    # x = np.random.randint(low=1, high=10, size=(len(y), 2))
-    X = out.numpy()
-    X_embedded = TSNE(n_components=2, learning_rate='auto',
-                    init='random', perplexity=3).fit_transform(X)
-    print(X_embedded.shape)
+    print(y.shape)
+    # colors = ['green', 'blue', 'red', 'yellow', 'cyan', 'orange', 'black', 'magenta']
+    # color_code = []
+    # for i in range(len(y)):
+    #     color_code.append(colors[y[i]])
+    # # print(color_code)
+    # # x = np.random.randint(low=1, high=10, size=(len(y), 2))
+    # X = out.numpy()
+    # X_embedded = TSNE(n_components=2, learning_rate='auto',
+    #                 init='random', perplexity=3).fit_transform(X)
+    # print(X_embedded.shape)
 
-    plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=color_code)
-    plt.savefig('output.png')
-    plt.show()
+    # plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=color_code)
+    # plt.savefig('output.png')
+    # plt.show()
 
 
 

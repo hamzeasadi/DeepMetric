@@ -11,6 +11,10 @@ from pytorch_metric_learning import miners
 from pytorch_metric_learning import reducers
 
 
+
+dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 def euclidean_distance_matrix(x):
     """Efficient computation of Euclidean distance matrix
     Args:
@@ -154,7 +158,7 @@ class KeepTrack():
         torch.save(obj=self.state, f=save_path)
 
     def load_ckp(self, fname):
-        state = torch.load(os.path.join(self.path, fname))
+        state = torch.load(os.path.join(self.path, fname), map_location=dev)
         return state
 
 
