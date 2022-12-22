@@ -39,7 +39,8 @@ def main():
     Net = OrthoSource()
     Net.to(dev)
     opt = optim.Adam(params=Net.parameters(), lr=3e-4)
-    criteria = OrthoLoss()
+    # criteria = OrthoLoss()
+    criteria = nn.CrossEntropyLoss()
     train_data, val_data, test_data = create_dataloader_split(dataset=dataset, batch_size=32)
     minerror = np.inf
     if args.train:
